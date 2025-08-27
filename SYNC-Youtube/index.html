@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Sync Room</title>
+    <!-- Tailwind CSS para um design moderno e responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-backdrop { background-color: rgba(0,0,0,0.7); }
+        #chat-messages::-webkit-scrollbar, #admin-logs::-webkit-scrollbar, #search-results::-webkit-scrollbar { width: 8px; }
+        #chat-messages::-webkit-scrollbar-track, #admin-logs::-webkit-scrollbar-track, #search-results::-webkit-scrollbar-track { background: #1f2937; }
+        #chat-messages::-webkit-scrollbar-thumb, #admin-logs::-webkit-scrollbar-thumb, #search-results::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        #chat-messages::-webkit-scrollbar-thumb:hover, #admin-logs::-webkit-scrollbar-thumb:hover, #search-results::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .btn-gradient { background-image: linear-gradient(to right, #4f46e5, #7c3aed); }
+        .btn-gradient-red { background-image: linear-gradient(to right, #dc2626, #be123c); }
+        .btn-gradient-green { background-image: linear-gradient(to right, #16a34a, #059669); }
+        .toast { transition: opacity 0.3s, transform 0.3s; }
+        .tab-active { border-color: #4f46e5; background-color: #3730a3; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Conteúdo Principal do Aplicativo -->
+    <div id="main-app">
+        <header class="bg-gray-800 p-4 flex justify-between items-center shadow-lg">
+            <h1 class="text-xl font-bold text-indigo-400">YouTube Sync Room</h1>
+            <div id="user-info" class="text-sm flex items-center gap-4">
+                <span id="user-display" class="font-semibold"></span>
+                <button id="login-modal-button" class="btn-gradient-green text-white font-bold py-2 px-4 rounded-lg text-xs shadow-md hover:opacity-90 transition-opacity">Login (Admin)</button>
+                <button id="admin-panel-button" class="btn-gradient text-white font-bold py-2 px-4 rounded-lg text-xs shadow-md hover:opacity-90 transition-opacity hidden">Painel do Admin</button>
+                <button id="logout-button" class="btn-gradient-red text-white font-bold py-2 px-4 rounded-lg text-xs shadow-md hover:opacity-90 transition-opacity hidden">Sair</button>
+            </div>
+        </header>
+
+        <main class="flex flex-col lg:flex-row p-4 gap-4">
+            <!-- Coluna Esquerda: Player -->
+            <div class="lg:w-3/4 w-full">
+                <div id="player-container" class="relative aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
+                    <div id="player"></div>
+                    <div id="player-overlay" class="absolute top-0 left-0 w-full h-full z-10 hidden cursor-not-allowed items-center justify-center bg-black bg-opacity-50 text-white text-lg font-bold"
+                    >Pausado pelo Administrador</div>
+                </div>
+                <!-- Botão de Sincronização -->
+                <div class="mt-4 flex justify-center">
+                    <button id="sync-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/><path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/></svg>
+                        Sincronizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna Direita: Chat -->
+            <div class="lg:w-1/4 w-full flex flex-col gap-4">
+                <div class="bg-gray-800 p-4 rounded-lg flex flex-col h-[calc(100vh-120px)] shadow-lg">
+                    <h2 class="text-lg font-bold mb-2 text-indigo-300">Chat em Tempo Real</h2>
+                    <div id="chat-messages" class="flex-grow overflow-y-auto mb-4 border-t border-b border-gray-700 p-2">
+                        <!-- Mensagens do chat -->
+                    </div>
+                    <form id="chat-form" class="flex gap-2">
+                        <input type="text" id="chat-input" placeholder="Digite sua mensagem..." class="flex-grow bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <button type="submit" class="btn-gradient text-white font-bold py-2 px-4 rounded-lg shadow-md hover:opacity-90 transition-opacity">Enviar</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+     <div id="login-modal" class="fixed inset-0 z-50 items-center justify-center modal-backdrop hidden">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm relative">
+            <h2 class="text-2xl font-bold mb-6 text-center text-indigo-400">Login do Administrador</h2>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="email" class="block mb-2 text-sm font-medium text-gray-300">Email</label>
+                    <input type="email" id="email" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block mb-2 text-sm font-medium text-gray-300">Senha</label>
+                    <input type="password" id="password" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" required>
+                </div>
+                <button type="submit" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Entrar</button>
+            </form>
+            <p id="login-error" class="text-red-500 text-sm mt-4 text-center"></p>
+            <button id="close-login-modal" class="absolute top-3 right-3 text-2xl text-gray-400 hover:text-white">&times;</button>
+        </div>
+    </div>
+    <div id="nickname-modal" class="fixed inset-0 z-50 items-center justify-center modal-backdrop hidden">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
+            <h2 class="text-2xl font-bold mb-6 text-center text-indigo-400">Defina seu Apelido</h2>
+            <form id="nickname-form">
+                <div class="mb-4">
+                    <label for="nickname" class="block mb-2 text-sm font-medium text-gray-300">Apelido</label>
+                    <input type="text" id="nickname" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" required>
+                </div>
+                <button type="submit" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Salvar</button>
+            </form>
+        </div>
+    </div>
+    <div id="admin-panel-modal" class="fixed inset-0 z-50 items-center justify-center modal-backdrop hidden">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-4xl h-3/4 flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-indigo-400">Painel do Administrador</h2>
+                <button id="close-admin-panel" class="text-2xl text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div class="flex-grow flex gap-4 overflow-hidden">
+                <div class="w-1/2 flex flex-col">
+                    <div class="border-b border-gray-700 mb-4">
+                        <nav class="-mb-px flex gap-4" aria-label="Tabs">
+                            <button id="tab-search" class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 tab-active">Buscar Vídeo</button>
+                            <button id="tab-playlist" class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Carregar Playlist</button>
+                        </nav>
+                    </div>
+                    <div id="search-content">
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="youtube-search" placeholder="Buscar vídeos do canal..." class="flex-grow bg-gray-700 border border-gray-600 rounded-lg p-2">
+                            <button id="search-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Buscar</button>
+                        </div>
+                    </div>
+                    <div id="playlist-content" class="hidden">
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="playlist-id" placeholder="Insira o ID da Playlist..." class="flex-grow bg-gray-700 border border-gray-600 rounded-lg p-2">
+                            <button id="load-playlist-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Carregar</button>
+                        </div>
+                    </div>
+                    <div id="video-list" class="flex-grow overflow-y-auto bg-gray-900 p-2 rounded"></div>
+                </div>
+                <div class="w-1/2 flex flex-col">
+                    <h3 class="font-bold mb-2">Logs de Atividade</h3>
+                    <div id="admin-logs" class="flex-grow overflow-y-auto bg-gray-900 p-2 rounded text-sm font-mono"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast fixed bottom-5 right-5 bg-indigo-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-y-2">
+        <p id="toast-message"></p>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, addDoc, query, orderBy, getDocs, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // --- CONFIGURAÇÃO (SUBSTITUA PELOS SEUS DADOS) ---
+        const firebaseConfig = {
+            apiKey: "***********************",
+            authDomain: "******.firebaseapp.com",
+            projectId: "fir-******",
+            storageBucket: "fir-******.firebasestorage.app",
+            messagingSenderId: "************",
+            appId: "1:******:web:************",
+            measurementId: "G-******"
+        };
+        const YOUTUBE_API_KEY = "******-******";
+        const YOUTUBE_CHANNEL_ID = "******";
+        // --- FIM DA CONFIGURAÇÃO ---
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let player;
+        let currentUser = null;
+        let guestNickname = localStorage.getItem('guestNickname');
+        let timeUpdateInterval = null;
+
+        const userDisplay = document.getElementById('user-display');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const playerOverlay = document.getElementById('player-overlay');
+        const loginModal = document.getElementById('login-modal');
+        const nicknameModal = document.getElementById('nickname-modal');
+        const adminPanelModal = document.getElementById('admin-panel-modal');
+        const loginModalButton = document.getElementById('login-modal-button');
+        const adminPanelButton = document.getElementById('admin-panel-button');
+        const logoutButton = document.getElementById('logout-button');
+        const syncButton = document.getElementById('sync-button');
+
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        window.onYouTubeIframeAPIReady = () => {
+            player = new YT.Player('player', {
+                height: '100%', width: '100%',
+                playerVars: { 'autoplay': 0, 'controls': 1, 'rel': 0 },
+                events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange }
+            });
+        };
+
+        function onPlayerReady(event) {
+            listenToPlayerState();
+        }
+
+        function onPlayerStateChange(event) {
+            if (!currentUser) return;
+
+            clearInterval(timeUpdateInterval);
+
+            const videoId = player.getVideoData().video_id;
+            if (!videoId) return;
+
+            const playerState = {
+                videoId: videoId,
+                state: event.data,
+                currentTime: player.getCurrentTime(),
+                timestamp: Date.now()
+            };
+
+            setDoc(doc(db, "playerState", "currentState"), playerState);
+
+            if (event.data === YT.PlayerState.PLAYING) {
+                logAction('PLAY', `Vídeo "${player.getVideoData().title}" retomado.`);
+                timeUpdateInterval = setInterval(() => {
+                    if (player && typeof player.getCurrentTime === 'function' && player.getPlayerState() === YT.PlayerState.PLAYING) {
+                         const currentState = {
+                            currentTime: player.getCurrentTime(),
+                            timestamp: Date.now()
+                         };
+                         setDoc(doc(db, "playerState", "currentState"), currentState, { merge: true });
+                    } else {
+                        clearInterval(timeUpdateInterval);
+                    }
+                }, 2000); 
+            } else if (event.data === YT.PlayerState.PAUSED) {
+                logAction('PAUSE', `Vídeo "${player.getVideoData().title}" pausado.`);
+            }
+        }
+
+        function listenToPlayerState() {
+            onSnapshot(doc(db, "playerState", "currentState"), (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data();
+                    
+                    if (player.getVideoData().video_id !== data.videoId) {
+                        player.loadVideoById(data.videoId, data.currentTime);
+                        if (!currentUser) showNotification('O administrador alterou o vídeo.', 'info');
+                    }
+
+                    if (!currentUser) {
+                        if (data.state === YT.PlayerState.PAUSED) {
+                            if (playerOverlay.classList.contains('hidden')) {
+                                player.seekTo(data.currentTime, true);
+                                player.pauseVideo();
+                                playerOverlay.classList.remove('hidden');
+                                showNotification('Vídeo pausado pelo administrador. Controlos bloqueados.', 'warn');
+                            }
+                        } else if (data.state === YT.PlayerState.PLAYING) {
+                            if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                                player.playVideo();
+                            }
+                            if (!playerOverlay.classList.contains('hidden')) {
+                                playerOverlay.classList.add('hidden');
+                                showNotification('Vídeo retomado pelo administrador. Controlos desbloqueados.', 'success');
+                            }
+                        } else {
+                            playerOverlay.classList.add('hidden');
+                        }
+                    }
+                }
+            });
+        }
+
+        async function forceSync() {
+            const playerStateRef = doc(db, "playerState", "currentState");
+            try {
+                const docSnap = await getDoc(playerStateRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (player.getVideoData().video_id !== data.videoId) {
+                         player.loadVideoById(data.videoId, data.currentTime);
+                    } else {
+                        player.seekTo(data.currentTime, true);
+                    }
+                    
+                    if (player.getPlayerState() !== data.state) {
+                        if (data.state === YT.PlayerState.PLAYING) player.playVideo();
+                        else if (data.state === YT.PlayerState.PAUSED) player.pauseVideo();
+                    }
+                    showNotification('Sincronizado com o administrador!', 'success');
+                }
+            } catch (error) {
+                console.error("Erro ao forçar sincronização:", error);
+                showNotification('Falha ao sincronizar.', 'error');
+            }
+        }
+        syncButton.addEventListener('click', forceSync);
+        
+        onAuthStateChanged(auth, (user) => {
+            const wasAdmin = !!currentUser;
+            currentUser = user;
+            updateUIForUser();
+            renderChatMessages(); 
+            if (user && !wasAdmin) {
+                logAction('LOGIN', `Admin ${user.email} entrou.`);
+            }
+        });
+
+        function updateUIForUser() {
+            if (currentUser) {
+                userDisplay.textContent = `Admin: ${currentUser.email.split('@')[0]}`;
+                loginModalButton.classList.add('hidden');
+                adminPanelButton.classList.remove('hidden');
+                logoutButton.classList.remove('hidden');
+                playerOverlay.classList.add('hidden');
+            } else {
+                userDisplay.textContent = guestNickname ? `Visitante: ${guestNickname}` : '';
+                loginModalButton.classList.remove('hidden');
+                adminPanelButton.classList.add('hidden');
+                logoutButton.classList.add('hidden');
+            }
+        }
+
+        const chatCollectionRef = collection(db, "chatMessages");
+        
+        async function renderChatMessages() {
+            const q = query(chatCollectionRef, orderBy("timestamp", "asc"));
+            const snapshot = await getDocs(q);
+            
+            chatMessages.innerHTML = '';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const messageEl = document.createElement('div');
+                messageEl.classList.add('mb-2', 'p-2', 'rounded-lg', 'bg-gray-700', 'text-sm', 'flex', 'justify-between', 'items-center', 'w-fit', 'max-w-full');
+                
+                let senderHTML = '';
+                if (data.isAdmin) {
+                    senderHTML = `<span class="font-bold text-amber-400">🛡️ ${data.sender}:</span>`;
+                    messageEl.classList.add('bg-indigo-900', 'self-end');
+                } else {
+                    senderHTML = `<span class="font-bold text-indigo-300">${data.sender}:</span>`;
+                    messageEl.classList.add('self-start');
+                }
+
+                let deleteButtonHTML = '';
+                if (currentUser) { 
+                    deleteButtonHTML = `<button data-doc-id="${doc.id}" data-message-text="${data.text}" class="delete-msg-btn text-red-500 hover:text-red-400 ml-2 opacity-50 hover:opacity-100">🗑️</button>`;
+                }
+                
+                messageEl.innerHTML = `<div>${senderHTML} ${data.text}</div> ${deleteButtonHTML}`;
+                chatMessages.appendChild(messageEl);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        onSnapshot(query(chatCollectionRef, orderBy("timestamp", "asc")), (snapshot) => {
+            renderChatMessages();
+        });
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser && !guestNickname) {
+                nicknameModal.classList.remove('hidden');
+                nicknameModal.classList.add('flex');
+                return;
+            }
+
+            const messageText = chatInput.value;
+            if (messageText.trim() === '') return;
+
+            await addDoc(chatCollectionRef, {
+                text: messageText,
+                timestamp: Date.now(),
+                sender: currentUser ? currentUser.email.split('@')[0] : guestNickname,
+                isAdmin: !!currentUser,
+                uid: currentUser ? currentUser.uid : null
+            });
+            chatInput.value = '';
+
+            const querySnapshot = await getDocs(query(chatCollectionRef, orderBy("timestamp", "asc")));
+            if (querySnapshot.size > 20) {
+                const oldestMessageDoc = querySnapshot.docs[0];
+                await deleteDoc(doc(db, "chatMessages", oldestMessageDoc.id));
+            }
+        });
+
+        chatMessages.addEventListener('click', async (e) => {
+            if (currentUser && e.target.classList.contains('delete-msg-btn')) {
+                const docId = e.target.dataset.docId;
+                const messageText = e.target.dataset.messageText;
+                if (docId) {
+                    await deleteDoc(doc(db, "chatMessages", docId));
+                    logAction('DELETE_MSG', `Mensagem apagada: "${messageText}"`);
+                }
+            }
+        });
+        
+        loginModalButton.addEventListener('click', () => {
+            loginModal.classList.remove('hidden');
+            loginModal.classList.add('flex');
+        });
+        document.getElementById('close-login-modal').addEventListener('click', () => {
+            loginModal.classList.add('hidden');
+            loginModal.classList.remove('flex');
+        });
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = e.target.email.value;
+            const password = e.target.password.value;
+            signInWithEmailAndPassword(auth, email, password)
+                .then(() => {
+                    loginModal.classList.add('hidden');
+                    loginModal.classList.remove('flex');
+                })
+                .catch(() => document.getElementById('login-error').textContent = "Email ou senha inválidos.");
+        });
+
+        document.getElementById('nickname-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            guestNickname = e.target.nickname.value;
+            if (guestNickname) {
+                localStorage.setItem('guestNickname', guestNickname);
+                nicknameModal.classList.add('hidden');
+                nicknameModal.classList.remove('flex');
+                updateUIForUser();
+                logAction('NEW_USER', `Utilizador ${guestNickname} entrou no chat.`);
+            }
+        });
+        
+        adminPanelButton.addEventListener('click', () => {
+            adminPanelModal.classList.remove('hidden');
+            adminPanelModal.classList.add('flex');
+            listenToLogs();
+        });
+        document.getElementById('close-admin-panel').addEventListener('click', () => {
+            adminPanelModal.classList.add('hidden');
+            adminPanelModal.classList.remove('flex');
+        });
+
+        logoutButton.addEventListener('click', () => {
+            logAction('LOGOUT', `Admin ${currentUser.email} saiu.`);
+            signOut(auth);
+        });
+
+        const videoListContainer = document.getElementById('video-list');
+        
+        async function searchYouTube() {
+            const query = document.getElementById('youtube-search').value;
+            if (!query) return;
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&channelId=${YOUTUBE_CHANNEL_ID}&type=video&key=${YOUTUBE_API_KEY}&maxResults=25`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                displayVideoList(data.items, true);
+            } catch (error) {
+                console.error("Erro ao buscar vídeos:", error);
+                videoListContainer.innerHTML = `<p class="text-red-400">Erro ao buscar vídeos.</p>`;
+            }
+        }
+
+        async function loadPlaylist() {
+            const playlistId = document.getElementById('playlist-id').value;
+            if (!playlistId) return;
+            const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&key=${YOUTUBE_API_KEY}&maxResults=50`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                displayVideoList(data.items, false);
+                logAction('LOAD_PLAYLIST', `Playlist ${playlistId} carregada.`);
+            } catch (error) {
+                console.error("Erro ao carregar playlist:", error);
+                videoListContainer.innerHTML = `<p class="text-red-400">Erro ao carregar playlist. Verifique o ID.</p>`;
+            }
+        }
+
+        function displayVideoList(items, isSearch) {
+            videoListContainer.innerHTML = '';
+            if (!items || items.length === 0) {
+                videoListContainer.innerHTML = '<p class="text-gray-400">Nenhum vídeo encontrado.</p>';
+                return;
+            }
+            items.forEach(item => {
+                const videoId = isSearch ? item.id.videoId : item.snippet.resourceId.videoId;
+                const title = item.snippet.title;
+                const videoEl = document.createElement('div');
+                videoEl.classList.add('p-2', 'rounded-lg', 'hover:bg-gray-700', 'cursor-pointer', 'text-sm');
+                videoEl.textContent = title;
+                videoEl.addEventListener('click', () => {
+                    if (currentUser) {
+                       const newState = { videoId, state: YT.PlayerState.PLAYING, currentTime: 0, timestamp: Date.now() };
+                       setDoc(doc(db, "playerState", "currentState"), newState);
+                       logAction('CHANGE_VIDEO', `Vídeo alterado para: ${title}`);
+                       adminPanelModal.classList.add('hidden');
+                       adminPanelModal.classList.remove('flex');
+                    }
+                });
+                videoListContainer.appendChild(videoEl);
+            });
+        }
+
+        document.getElementById('search-button').addEventListener('click', searchYouTube);
+        document.getElementById('load-playlist-button').addEventListener('click', loadPlaylist);
+
+        // Lógica das Abas do Painel Admin
+        const tabSearch = document.getElementById('tab-search');
+        const tabPlaylist = document.getElementById('tab-playlist');
+        const searchContent = document.getElementById('search-content');
+        const playlistContent = document.getElementById('playlist-content');
+
+        tabSearch.addEventListener('click', () => {
+            tabSearch.classList.add('tab-active');
+            tabPlaylist.classList.remove('tab-active');
+            searchContent.classList.remove('hidden');
+            playlistContent.classList.add('hidden');
+        });
+
+        tabPlaylist.addEventListener('click', () => {
+            tabPlaylist.classList.add('tab-active');
+            tabSearch.classList.remove('tab-active');
+            playlistContent.classList.remove('hidden');
+            searchContent.classList.add('hidden');
+        });
+        
+        const logsCollectionRef = collection(db, "logs");
+        async function logAction(action, details) {
+            if (!currentUser && action !== 'NEW_USER') return;
+            const adminEmail = currentUser ? currentUser.email : 'Sistema';
+            await addDoc(logsCollectionRef, {
+                action,
+                details,
+                timestamp: Date.now(),
+                admin: adminEmail
+            });
+        }
+
+        function listenToLogs() {
+            const adminLogs = document.getElementById('admin-logs');
+            const q = query(logsCollectionRef, orderBy("timestamp", "desc"));
+            onSnapshot(q, (snapshot) => {
+                adminLogs.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const logEl = document.createElement('div');
+                    logEl.classList.add('p-2', 'border-b', 'border-gray-700', 'text-xs');
+
+                    let actionColor = 'text-indigo-300';
+                    switch(data.action) {
+                        case 'LOGIN':
+                        case 'NEW_USER':
+                            actionColor = 'text-green-400';
+                            break;
+                        case 'LOGOUT':
+                            actionColor = 'text-red-400';
+                            break;
+                        case 'DELETE_MSG':
+                            actionColor = 'text-yellow-400';
+                            break;
+                    }
+
+                    logEl.innerHTML = `
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-semibold ${actionColor}">${data.action}</span>
+                            <span class="text-gray-500">${new Date(data.timestamp).toLocaleString('pt-BR')}</span>
+                        </div>
+                        <p class="text-gray-300 break-words">${data.details}</p>
+                        <p class="text-right text-xs text-gray-500">por ${data.admin}</p>`;
+                    adminLogs.appendChild(logEl);
+                });
+            });
+        }
+
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        function showNotification(message, type = 'info') {
+            toastMessage.textContent = message;
+            toast.className = 'toast fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-y-2'; // Reset
+            switch(type) {
+                case 'success': toast.classList.add('bg-green-600'); break;
+                case 'error': toast.classList.add('bg-red-600'); break;
+                case 'warn': toast.classList.add('bg-yellow-600'); break;
+                default: toast.classList.add('bg-indigo-600');
+            }
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 3000);
+        }
+
+    </script>
+</body>
+</html>
