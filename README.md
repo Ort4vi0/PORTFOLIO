@@ -1,5 +1,5 @@
 <h1 align="center">Olá, me chamo Otávio de Quadros Sonnenstrahl 👋</h1>
-<h3 align="center">Um(a) Estudante de Engenharia de Software, buscando se aprimorar em diversas tecnologias</h3>
+<h3 align="center">Um Estudante de Engenharia de Software, buscando se aprimorar em diversas tecnologias</h3>
 
 <br>
 
