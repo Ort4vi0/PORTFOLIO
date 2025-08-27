@@ -4,7 +4,7 @@
 <br>
 
 <p align="left">
-  Sou um(a) desenvolvedor(a) Full-Stack residente em Ponta Grossa, Paraná, Brasil. Com experiência em algumas  meu foco é transformar ideias em realidade através de código limpo e funcional.
+  Sou um desenvolvedor Full-Stack residente em Ponta Grossa, Paraná, Brasil. Com experiência em algumas  meu foco é transformar ideias em realidade através de código limpo e funcional.
 </p>
 <p align="left">
   🚀 Atualmente explorando o universo de C, JS, NODEJS e buscando oportunidades de contribuir com outros projetos.
