@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Gerenciador de Projetos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-glow"></div>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1 class="logo">TaskFlow</h1>
+                        <span class="logo-subtitle">Organize seus projetos</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema">
+                        <div class="theme-toggle-track">
+                            <div class="theme-toggle-thumb">
+                                <i class="fas fa-sun"></i>
+                                <i class="fas fa-moon"></i>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Projects Section -->
+            <section class="projects-section" id="projectsSection">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-folder-open"></i>
+                        Projetos
+                    </h2>
+                    <div class="header-actions-group">
+                        <button class="btn btn-secondary" id="refreshProjectsBtn" title="Atualizar">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn btn-secondary" id="exportProjectsBtn" title="Exportar">
+                            <i class="fas fa-download"></i>
+                            Exportar
+                        </button>
+                        <button class="btn btn-secondary" id="importProjectsBtn" title="Importar">
+                            <i class="fas fa-upload"></i>
+                            Importar
+                        </button>
+                        <button class="btn btn-primary" id="addProjectBtn">
+                            <i class="fas fa-plus"></i>
+                            Novo Projeto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selection Actions Bar -->
+                <div class="selection-bar" id="projectsSelectionBar" style="display: none;">
+                    <div class="selection-info">
+                        <span id="projectsSelectedCount">0</span> projeto(s) selecionado(s)
+                    </div>
+                    <div class="selection-actions">
+                        <button class="btn btn-secondary" id="cancelProjectsSelectionBtn">
+                            Cancelar
+                        </button>
+                        <button class="btn btn-danger" id="deleteSelectedProjectsBtn">
+                            <i class="fas fa-trash"></i>
+                            Excluir Selecionados
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="search-filter-bar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchProjectsInput" placeholder="Pesquisar projetos...">
+                    </div>
+                    <div class="filter-controls">
+                        <button class="btn btn-secondary view-toggle active" data-view="grid" title="Visualização em grade">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="btn btn-secondary view-toggle" data-view="list" title="Visualização em lista">
+                            <i class="fas fa-list"></i>
+                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" id="sortDropdown">
+                                <i class="fas fa-sort"></i>
+                                Mais Recentes
+                            </button>
+                            <div class="dropdown-menu" id="sortMenu">
+                                <button class="dropdown-item active" data-sort="recent">Mais Recentes</button>
+                                <button class="dropdown-item" data-sort="oldest">Mais Antigos</button>
+                                <button class="dropdown-item" data-sort="name-asc">Nome (A-Z)</button>
+                                <button class="dropdown-item" data-sort="name-desc">Nome (Z-A)</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" id="toggleSelectionModeBtn">
+                            <i class="fas fa-check-square"></i>
+                            Modo Seleção
+                        </button>
+                    </div>
+                </div>
+
+                <div class="projects-grid" id="projectsGrid">
+                    <!-- Projects will be loaded here -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="projectsEmptyState" style="display: none;">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>Nenhum projeto encontrado</h3>
+                    <p>Comece criando seu primeiro projeto</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('addProjectBtn').click()">
+                        Criar Projeto
+                    </button>
+                </div>
+            </section>
+
+            <!-- Tasks Section -->
+            <section class="tasks-section" id="tasksSection" style="display: none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <button class="btn btn-icon" id="backToProjectsBtn">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <div>
+                            <h2 id="currentProjectName">Tarefas do Projeto</h2>
+                            <p class="project-description" id="currentProjectDescription"></p>
+                        </div>
+                    </div>
+                    <div class="header-actions-group">
+                        <button class="btn btn-secondary" id="refreshTasksBtn" title="Atualizar">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn btn-primary" id="addTaskBtn">
+                            <i class="fas fa-plus"></i>
+                            Nova Tarefa
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selection Actions Bar -->
+                <div class="selection-bar" id="tasksSelectionBar" style="display: none;">
+                    <div class="selection-info">
+                        <span id="tasksSelectedCount">0</span> tarefa(s) selecionada(s)
+                    </div>
+                    <div class="selection-actions">
+                        <button class="btn btn-secondary" id="cancelTasksSelectionBtn">
+                            Cancelar
+                        </button>
+                        <button class="btn btn-danger" id="deleteSelectedTasksBtn">
+                            <i class="fas fa-trash"></i>
+                            Excluir Selecionadas
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Task Stats -->
+                <div class="task-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-list-check"></i>
+                        <div>
+                            <span class="stat-value" id="totalTasks">0</span>
+                            <span class="stat-label">Total</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <span class="stat-value" id="completedTasks">0</span>
+                            <span class="stat-label">Concluídas</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <span class="stat-value" id="pendingTasks">0</span>
+                            <span class="stat-label">Pendentes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Toolbar -->
+                <div class="projects-toolbar">
+                    <button class="btn btn-secondary" id="toggleTaskSelectionModeBtn">
+                        <i class="fas fa-check-square"></i>
+                        Modo Seleção
+                    </button>
+                </div>
+
+                <!-- Tasks List -->
+                <div class="tasks-list" id="tasksList">
+                    <!-- Tasks will be loaded here -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="tasksEmptyState" style="display: none;">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>Nenhuma tarefa encontrada</h3>
+                    <p>Adicione tarefas para organizar seu projeto</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('addTaskBtn').click()">
+                        Criar Tarefa
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal - Add/Edit Project -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="projectModalTitle">
+                    <i class="fas fa-folder-plus"></i>
+                    Novo Projeto
+                </h3>
+                <button class="modal-close" id="closeProjectModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="projectForm" novalidate>
+                <div class="form-group">
+                    <label for="projectName">
+                        <i class="fas fa-heading"></i>
+                        Nome do Projeto
+                        <span class="char-counter" id="projectNameCounter">0/50</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="projectName" 
+                        placeholder="Digite o nome do projeto"
+                        autocomplete="off"
+                        maxlength="50"
+                    >
+                    <span class="field-error" id="projectNameError"></span>
+                </div>
+                <div class="form-group">
+                    <label for="projectDescription">
+                        <i class="fas fa-align-left"></i>
+                        Descrição
+                        <span class="char-counter" id="projectDescriptionCounter">0/3000</span>
+                    </label>
+                    <textarea 
+                        id="projectDescription" 
+                        placeholder="Digite a descrição do projeto" 
+                        rows="4"
+                        maxlength="3000"
+                    ></textarea>
+                    <span class="field-error" id="projectDescriptionError"></span>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelProjectBtn">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal - Add/Edit Task -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="taskModalTitle">
+                    <i class="fas fa-plus-circle"></i>
+                    Nova Tarefa
+                </h3>
+                <button class="modal-close" id="closeTaskModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="taskForm" novalidate>
+                <div class="form-group">
+                    <label for="taskTitle">
+                        <i class="fas fa-heading"></i>
+                        Título da Tarefa
+                        <span class="char-counter" id="taskTitleCounter">0/200</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="taskTitle" 
+                        placeholder="Digite o título da tarefa"
+                        autocomplete="off"
+                        maxlength="200"
+                    >
+                    <span class="field-error" id="taskTitleError"></span>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input 
+                            type="checkbox" 
+                            id="taskCompleted"
+                        >
+                        <span class="checkbox-custom"></span>
+                        <span>Marcar como concluída</span>
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelTaskBtn">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden File Input for Import -->
+    <input type="file" id="importFileInput" accept=".json" style="display: none;">
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-modal-content">
+            <div class="confirm-modal-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3 id="confirmModalTitle">Confirmar Ação</h3>
+            </div>
+            <div class="confirm-modal-body">
+                <p id="confirmModalMessage">Tem certeza que deseja realizar esta ação?</p>
+            </div>
+            <div class="confirm-modal-footer">
+                <button class="btn btn-secondary" id="confirmCancelBtn">
+                    Cancelar
+                </button>
+                <button class="btn btn-danger" id="confirmOkBtn">
+                    <i class="fas fa-trash"></i>
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Text Viewer Modal -->
+    <div class="modal" id="textViewerModal">
+        <div class="modal-content text-viewer-modal">
+            <div class="modal-header" style="border-bottom: none; padding-bottom: 0;">
+                <h3 style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                    <i class="fas fa-align-left"></i>
+                    Descrição:
+                </h3>
+                <button class="modal-close" id="closeTextViewerBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-viewer-content" id="textViewerContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

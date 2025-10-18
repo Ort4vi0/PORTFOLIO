@@ -1,0 +1,33 @@
+{
+  "name": "projeto-1",
+  "version": "1.0.0",
+  "description": "Sistema de gerenciamento de projetos e tarefas com Node.js, Express e MongoDB",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "dev": "nodemon --legacy-watch main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "rest-api",
+    "crud"
+  ],
+  "author": "Ort4vi0",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ort4vi0/PORTFOLIO.git"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mongoose": "^8.19.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
